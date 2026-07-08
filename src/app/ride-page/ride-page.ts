@@ -11,7 +11,7 @@ import { getRideStatusInfo } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getRoleLabel } from '../core/staff-function.util';
-import { firstRideOpenMinutes, getRideOpeningReferenceMinutes, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
+import { firstRideOpenMinutes, isPrincipalPilotLate, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
 import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
@@ -56,8 +56,6 @@ export class RidePage implements OnInit {
 
   readonly getRideStatusInfo = getRideStatusInfo;
 
-  readonly openingReference = computed(() => getRideOpeningReferenceMinutes(this.ride(), this.schedules()));
-
   readonly pilotEntries = computed<PilotEntry[]>(() => {
     const status = this.ride()?.status;
     if (!status) {
@@ -65,8 +63,8 @@ export class RidePage implements OnInit {
     }
     const ride = this.ride();
     const logs = this.logs();
-    const openingReference = this.openingReference();
     const rideOpenedAt = firstRideOpenMinutes(ride, logs);
+    const late = isPrincipalPilotLate(ride, this.schedules(), logs);
     const entries: PilotEntry[] = [];
     const pilots: [number | null, string | null][] = [
       [status.pilotId1, status.shiftStart1],
@@ -82,7 +80,7 @@ export class RidePage implements OnInit {
           functionLabel: getRoleLabel(role),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
-          rowClass: isPrincipalRole(role) ? this.pilotRowClass(rideOpenedAt, openingReference) : ''
+          rowClass: isPrincipalRole(role) ? this.pilotRowClass(rideOpenedAt, late) : ''
         });
       }
     });
@@ -251,16 +249,12 @@ export class RidePage implements OnInit {
       && target.getDate() === reference.getDate();
   }
 
-  private pilotRowClass(connectedAtMinutes: number | null, openingReference: number | null): string {
-    if (connectedAtMinutes == null) {
+  private pilotRowClass(rideOpenedAtMinutes: number | null, isLate: boolean): string {
+    if (rideOpenedAtMinutes == null) {
       return '';
     }
 
-    if (openingReference == null) {
-      return 'pilot-row-success';
-    }
-
-    return connectedAtMinutes > openingReference ? 'pilot-row-danger' : 'pilot-row-success';
+    return isLate ? 'pilot-row-danger' : 'pilot-row-success';
   }
 
   private errorInfo(eventType: number | null, comments: string | null, userIds: string | null): { label: string; message: string } | null {

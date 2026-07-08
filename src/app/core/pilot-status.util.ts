@@ -136,6 +136,57 @@ export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLo
   return sameDayMinutes[0] ?? null;
 }
 
+const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
+const MAINTENANCE_END_COMMENT = 'Fin de Maintenance';
+const LATE_GRACE_MINUTES = 5;
+
+/**
+ * A ride can also fail to open on schedule for a reason that has nothing to do with staffing: it
+ * was placed in maintenance and only came back up after the scheduled opening time. If a logged
+ * maintenance window ("Mise en Maintenance" / "Fin de Maintenance") spans the scheduled opening
+ * minute, the delay is explained by that and shouldn't be attributed to the pilot.
+ */
+function isOpeningDelayJustifiedByMaintenance(
+  ride: Ride | null | undefined,
+  logs: ParkLog[],
+  openingReference: number
+): boolean {
+  const rideId = ride?.id;
+  if (rideId == null) {
+    return false;
+  }
+
+  const stateLogs = logs
+    .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
+    .map((log) => ({ comment: (log.comments ?? '').trim(), date: new Date(log.recordedAt as string) }))
+    .filter((entry) => !Number.isNaN(entry.date.getTime()));
+
+  if (!stateLogs.length) {
+    return false;
+  }
+
+  const latestDay = stateLogs.reduce((latest, current) => (current.date.getTime() > latest.date.getTime() ? current : latest)).date;
+
+  const sameDayLogs = stateLogs
+    .filter((entry) => isSameCalendarDay(entry.date.toISOString(), latestDay))
+    .sort((left, right) => left.date.getTime() - right.date.getTime());
+
+  let maintenanceStart: number | null = null;
+  for (const entry of sameDayLogs) {
+    const minutes = entry.date.getHours() * 60 + entry.date.getMinutes();
+    if (entry.comment === MAINTENANCE_START_COMMENT) {
+      maintenanceStart = minutes;
+    } else if (entry.comment === MAINTENANCE_END_COMMENT) {
+      if (maintenanceStart != null && maintenanceStart <= openingReference && minutes >= openingReference) {
+        return true;
+      }
+      maintenanceStart = null;
+    }
+  }
+
+  return false;
+}
+
 export function isPrincipalPilotLate(ride: Ride | null | undefined, schedules: Schedule[], logs: ParkLog[]): boolean {
   const openingReference = getRideOpeningReferenceMinutes(ride, schedules);
   if (openingReference == null) {
@@ -143,5 +194,9 @@ export function isPrincipalPilotLate(ride: Ride | null | undefined, schedules: S
   }
 
   const openedAt = firstRideOpenMinutes(ride, logs);
-  return openedAt != null && openedAt > openingReference;
+  if (openedAt == null || openedAt - openingReference <= LATE_GRACE_MINUTES) {
+    return false;
+  }
+
+  return !isOpeningDelayJustifiedByMaintenance(ride, logs, openingReference);
 }
