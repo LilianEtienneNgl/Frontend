@@ -138,7 +138,7 @@ export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLo
 
 const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
 const MAINTENANCE_END_COMMENT = 'Fin de Maintenance';
-const LATE_GRACE_MINUTES = 5;
+const LATE_GRACE_MINUTES = 1;
 
 /**
  * A ride can also fail to open on schedule for a reason that has nothing to do with staffing: it
