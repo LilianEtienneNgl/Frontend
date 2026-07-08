@@ -1,0 +1,49 @@
+<main class="page p-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <input
+      type="search"
+      class="form-control"
+      style="max-width: 280px"
+      placeholder="Rechercher une attraction..."
+      [(ngModel)]="search"
+    />
+
+    <div class="btn-group" role="group" aria-label="Filtre alertes">
+      <input
+        type="radio"
+        class="btn-check"
+        name="alerteFilter"
+        id="alerteFilterOn"
+        autocomplete="off"
+        [checked]="alerteOnly()"
+        (change)="setAlerteFilter(true)"
+      />
+      <label class="btn btn-outline-danger" for="alerteFilterOn">Alertes</label>
+
+      <input
+        type="radio"
+        class="btn-check"
+        name="alerteFilter"
+        id="alerteFilterOff"
+        autocomplete="off"
+        [checked]="!alerteOnly()"
+        (change)="setAlerteFilter(false)"
+      />
+      <label class="btn btn-outline-primary" for="alerteFilterOff">Toutes</label>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="text-muted">Chargement des attractions...</p>
+  } @else if (error()) {
+    <div class="alert alert-danger">Impossible de charger les attractions depuis l'API.</div>
+  } @else {
+    <app-rides-list
+      [items]="items()"
+      [sortKey]="sortKey()"
+      [sortDir]="sortDir()"
+      (sortChange)="toggleSort($event)"
+      (rideSelected)="openRide($event)"
+    />
+  }
+</main>

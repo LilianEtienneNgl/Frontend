@@ -1,1 +1,35 @@
-/* You can add global styles to this file, and also import other style files */
+/* Importing Bootstrap SCSS file. */
+@use 'bootstrap/scss/bootstrap';
+
+html,
+body {
+  margin: 0;
+}
+
+/* Phone-first layout: content is capped to a phone-sized column and
+   centered so the app still looks reasonable on wider screens. */
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+@media (min-width: 700px) {
+  .page {
+    max-width: 640px;
+  }
+}
+
+/* Fixed-size color swatch for ride status, used as a small dot in the
+   rides table and a bigger cube on the attraction detail page. */
+.status-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  vertical-align: middle;
+}
+
+.status-swatch-lg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+

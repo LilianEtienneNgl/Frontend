@@ -1,0 +1,101 @@
+<header class="d-flex align-items-center justify-content-between bg-light border-bottom px-3 py-2">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goBack()">&larr; Retour</button>
+  <span class="fw-bold">{{ ride()?.name || 'Attraction' }}</span>
+</header>
+
+<main class="page p-3">
+  @if (loading()) {
+    <p class="text-muted">Chargement de l'attraction...</p>
+  } @else if (error() || !ride()) {
+    <div class="alert alert-danger">Impossible de charger cette attraction depuis l'API.</div>
+  } @else {
+    @if (defaultAlerts().length) {
+      <div class="mb-3">
+        <h3 class="h6 text-uppercase text-muted">Alertes</h3>
+        <ul class="list-group">
+          @for (entry of defaultAlerts(); track entry.hour + '-' + entry.message) {
+            <li class="list-group-item list-group-item-warning mb-1">
+              <strong>{{ entry.hour }}</strong> - {{ entry.message }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <ul class="list-group mb-3">
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Status</span>
+        <span class="d-flex align-items-center gap-2">
+          <span class="status-swatch status-swatch-lg" [class]="getRideStatusInfo(ride()!.status?.status).swatchClass"></span>
+          {{ getRideStatusInfo(ride()!.status?.status).label }}
+        </span>
+      </li>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Temps attente</span>
+        <span>{{ waitingTimeLabel(ride()!.status?.queueLength) }}</span>
+      </li>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Horaires</span>
+        <span class="text-end">
+          @if (rideSchedules().length) {
+            @for (range of rideSchedules(); track range) {
+              <div>{{ range }}</div>
+            }
+          } @else {
+            <span>-</span>
+          }
+        </span>
+      </li>
+    </ul>
+
+    <h3 class="h6 text-uppercase text-muted">Pilotes</h3>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Heure de connexion</th>
+            <th>Fonction</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of pilotEntries(); track entry.columnName) {
+            <tr [class]="entry.rowClass">
+              <td>{{ entry.name }}</td>
+              <td>{{ entry.shiftStart || '-' }}</td>
+              <td>{{ entry.columnName }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3" class="text-muted">Aucun pilote connecté.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (supportStaff()) {
+      <div class="mb-3 small">
+        <strong>Staff:</strong> {{ supportStaff()!.name }} ({{ supportStaff()!.shiftStart || '-' }})
+      </div>
+    }
+
+    <h3 class="h6 text-uppercase text-muted">Historique</h3>
+    <ul class="list-group">
+      @for (entry of rideErrorLogs(); track entry.label + '-' + (entry.recordedAt ?? '')) {
+        <li class="list-group-item">
+          <div class="d-flex align-items-start gap-3">
+            <span class="text-muted small flex-shrink-0">{{ formatHour(entry.recordedAt) }}</span>
+            <div class="flex-grow-1 text-end">
+              <div class="fw-bold">{{ entry.label }}</div>
+              <div class="small mt-1">{{ entry.message }}</div>
+            </div>
+          </div>
+        </li>
+      } @empty {
+        <li class="list-group-item text-muted">Aucun log d'erreur pour cette attraction.</li>
+      }
+    </ul>
+
+  }
+</main>

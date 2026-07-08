@@ -1,0 +1,45 @@
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>
+          <button type="button" class="btn btn-link p-0 table-sort" (click)="toggleSort('name')">
+            Attraction {{ sortLabel('name') }}
+          </button>
+        </th>
+        <th>
+          Statut
+        </th>
+        <th>
+          Operateurs
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of items(); track item.ride.id) {
+        <tr role="button" (click)="openRide(item.ride)" [class.table-warning]="item.isAlerte">
+          <td>{{ item.ride.name || 'Attraction sans nom' }}</td>
+          <td>
+            <span class="badge rounded-pill" [class]="getRideStatusInfo(item.ride.status?.status).badgeClass">
+              {{ getRideStatusInfo(item.ride.status?.status).label }}
+            </span>
+          </td>
+          <td>
+            <span class="small fw-semibold">&#128100; {{ connectedOperatorsCount(item.ride) }}</span>
+          </td>
+        </tr>
+        @if (item.issues.length) {
+          <tr class="table-warning-subtle">
+            <td colspan="3" class="small">
+              <strong>Alerte:</strong> {{ item.issues.join(' | ') }}
+            </td>
+          </tr>
+        }
+      } @empty {
+        <tr>
+          <td colspan="3" class="text-muted">Aucune attraction ne correspond au filtre.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
