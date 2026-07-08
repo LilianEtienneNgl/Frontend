@@ -10,9 +10,10 @@ import { Staff } from '../staff/model';
 import { getRideStatusInfo } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
+import { getStaffFunctionLabel } from '../core/staff-function.util';
 
 interface PilotEntry {
-  columnName: string;
+  functionLabel: string;
   name: string;
   shiftStart: string | null;
   rowClass: string;
@@ -75,11 +76,11 @@ export class RidePage implements OnInit {
       [status.pilotId3, status.shiftStart3],
       [status.pilotId4, status.shiftStart4]
     ];
-    pilots.forEach(([pilotId, shiftStart], index) => {
+    pilots.forEach(([pilotId, shiftStart]) => {
       if (pilotId != null && pilotId > 0) {
         const formattedShiftStart = this.formatHour(shiftStart);
         entries.push({
-          columnName: `Pilote ${index + 1}`,
+          functionLabel: getStaffFunctionLabel(this.staffById()[pilotId]?.jobFunctionId),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
           rowClass: this.pilotRowClass(formattedShiftStart, openingReference)

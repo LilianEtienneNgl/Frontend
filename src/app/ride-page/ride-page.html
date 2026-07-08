@@ -59,11 +59,11 @@
           </tr>
         </thead>
         <tbody>
-          @for (entry of pilotEntries(); track entry.columnName) {
+          @for (entry of pilotEntries(); track entry.name + '-' + entry.functionLabel) {
             <tr [class]="entry.rowClass">
               <td>{{ entry.name }}</td>
               <td>{{ entry.shiftStart || '-' }}</td>
-              <td>{{ entry.columnName }}</td>
+              <td>{{ entry.functionLabel }}</td>
             </tr>
           } @empty {
             <tr>
