@@ -11,7 +11,7 @@ import { getRideStatusInfo } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getRoleLabel } from '../core/staff-function.util';
-import { firstRideOpenMinutes, isPrincipalPilotLate, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
+import { firstRideOpenLog, firstRideOpenMinutes, isPrincipalPilotLate, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
 import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
@@ -22,9 +22,11 @@ interface PilotEntry {
 }
 
 interface RideErrorLog {
+  id: number;
   label: string;
   message: string;
   recordedAt: string | null;
+  isLateOpening: boolean;
 }
 
 interface RideDefaultAlert {
@@ -140,9 +142,18 @@ export class RidePage implements OnInit {
     return latest;
   });
 
+  readonly lateOpeningLogId = computed<number | null>(() => {
+    const ride = this.ride();
+    if (!isPrincipalPilotLate(ride, this.schedules(), this.logs())) {
+      return null;
+    }
+    return firstRideOpenLog(ride, this.logs())?.id ?? null;
+  });
+
   readonly rideErrorLogs = computed<RideErrorLog[]>(() => {
     const rideId = this.ride()?.id;
     const latestLogDay = this.latestLogDay();
+    const lateOpeningLogId = this.lateOpeningLogId();
 
     if (rideId == null || latestLogDay == null) {
       return [];
@@ -158,9 +169,11 @@ export class RidePage implements OnInit {
           return [];
         }
         return [{
+          id: log.id,
           label: info.label,
           message: info.message,
           recordedAt: log.recordedAt,
+          isLateOpening: log.id === lateOpeningLogId
         }];
       });
   });

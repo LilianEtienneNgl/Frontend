@@ -110,30 +110,39 @@ const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';
  * latest connection and gets overwritten on every reconnect (e.g. after a maintenance-triggered
  * disconnect), which would misreport a legitimate on-time arrival as late.
  */
-export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLog[]): number | null {
+export function firstRideOpenLog(ride: Ride | null | undefined, logs: ParkLog[]): ParkLog | null {
   const rideId = ride?.id;
   if (rideId == null) {
     return null;
   }
 
-  const openTimes = logs
+  const candidates = logs
     .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
     .filter((log) => (log.comments ?? '').trim().endsWith(OPEN_TRANSITION_SUFFIX))
-    .map((log) => new Date(log.recordedAt as string))
-    .filter((date) => !Number.isNaN(date.getTime()));
+    .map((log) => ({ log, date: new Date(log.recordedAt as string) }))
+    .filter((entry) => !Number.isNaN(entry.date.getTime()));
 
-  if (!openTimes.length) {
+  if (!candidates.length) {
     return null;
   }
 
-  const latestDay = openTimes.reduce((latest, current) => (current.getTime() > latest.getTime() ? current : latest));
+  const latestDay = candidates.reduce((latest, current) => (current.date.getTime() > latest.date.getTime() ? current : latest)).date;
 
-  const sameDayMinutes = openTimes
-    .filter((date) => isSameCalendarDay(date.toISOString(), latestDay))
-    .map((date) => date.getHours() * 60 + date.getMinutes())
-    .sort((left, right) => left - right);
+  const sameDay = candidates
+    .filter((entry) => isSameCalendarDay(entry.date.toISOString(), latestDay))
+    .sort((left, right) => left.date.getTime() - right.date.getTime());
 
-  return sameDayMinutes[0] ?? null;
+  return sameDay[0]?.log ?? null;
+}
+
+export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLog[]): number | null {
+  const log = firstRideOpenLog(ride, logs);
+  if (!log?.recordedAt) {
+    return null;
+  }
+
+  const date = new Date(log.recordedAt);
+  return Number.isNaN(date.getTime()) ? null : date.getHours() * 60 + date.getMinutes();
 }
 
 const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
