@@ -9,10 +9,13 @@ import { StaffService } from '../../staff/services/staff.service';
 import { ScheduleService } from '../../core/schedule.service';
 import { RidesListComponent, RideListItem } from '../rides-list/rides-list.component';
 import { rideDefaultIssues } from '../default-issues.util';
+import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
 
 interface RideAlertEntry {
+  rideId: number;
   rideName: string;
   message: string;
+  issuesSignature: string;
 }
 
 @Component({
@@ -25,6 +28,7 @@ export class RideComponent implements OnInit {
   private readonly ridesService = inject(RidesService);
   private readonly staffService = inject(StaffService);
   private readonly scheduleService = inject(ScheduleService);
+  private readonly dismissedAlertsService = inject(DismissedAlertsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -53,12 +57,18 @@ export class RideComponent implements OnInit {
     });
   });
 
+  private readonly visibleItems = computed<RideListItem[]>(() => {
+    return this.mappedItems().filter(
+      (item) => !this.dismissedAlertsService.isDismissed(item.ride.id, issuesSignature(item.issues))
+    );
+  });
+
   readonly items = computed<RideListItem[]>(() => {
     const term = this.search().trim().toLowerCase();
     const alerteOnly = this.alerteOnly();
     const sortDir = this.sortDir();
 
-    const filtered = this.mappedItems().filter((item) => {
+    const filtered = this.visibleItems().filter((item) => {
       const matchesSearch = !term || (item.ride.name ?? '').toLowerCase().includes(term);
       const matchesAlerte = !alerteOnly || item.isAlerte;
       return matchesSearch && matchesAlerte;
@@ -72,11 +82,13 @@ export class RideComponent implements OnInit {
   });
 
   readonly activeAlerts = computed<RideAlertEntry[]>(() => {
-    return this.mappedItems()
+    return this.visibleItems()
       .filter((item) => item.isAlerte)
       .flatMap((item) => item.issues.map((message) => ({
+        rideId: item.ride.id,
         rideName: item.ride.name || 'Attraction sans nom',
-        message
+        message,
+        issuesSignature: issuesSignature(item.issues)
       })));
   });
 
@@ -134,5 +146,9 @@ export class RideComponent implements OnInit {
 
   setAlerteFilter(enabled: boolean): void {
     this.alerteOnly.set(enabled);
+  }
+
+  dismissAlert(entry: RideAlertEntry): void {
+    this.dismissedAlertsService.dismiss(entry.rideId, entry.issuesSignature);
   }
 }

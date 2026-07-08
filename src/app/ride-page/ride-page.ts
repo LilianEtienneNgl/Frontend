@@ -12,6 +12,7 @@ import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getStaffFunctionLabel } from '../core/staff-function.util';
 import { getRideOpeningReferenceMinutes, isPrincipalJobFunction, parseHourToMinutes } from '../core/pilot-status.util';
+import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
   functionLabel: string;
@@ -44,6 +45,7 @@ export class RidePage implements OnInit {
   private readonly staffService = inject(StaffService);
   private readonly logsService = inject(LogsService);
   private readonly scheduleService = inject(ScheduleService);
+  private readonly dismissedAlertsService = inject(DismissedAlertsService);
 
   readonly ride = signal<Ride | null>(null);
   readonly staffById = signal<Record<number, Staff>>({});
@@ -97,14 +99,19 @@ export class RidePage implements OnInit {
 
   readonly rideSchedules = computed(() => rideScheduleRanges(this.ride(), this.schedules()));
 
+  readonly currentIssues = computed(() => rideDefaultIssues(this.ride(), this.schedules(), this.staffById()));
+
   readonly defaultAlerts = computed<RideDefaultAlert[]>(() => {
     const ride = this.ride();
-    const issues = rideDefaultIssues(ride, this.schedules(), this.staffById());
-    if (!issues.length) {
+    const issues = this.currentIssues();
+    if (!issues.length || !ride) {
+      return [];
+    }
+    if (this.dismissedAlertsService.isDismissed(ride.id, issuesSignature(issues))) {
       return [];
     }
 
-    const alertHour = this.formatHour(ride?.status?.lastRefreshStatus);
+    const alertHour = this.formatHour(ride.status?.lastRefreshStatus);
     return issues.map((message) => ({
       hour: alertHour,
       message,
@@ -358,5 +365,13 @@ export class RidePage implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/']);
+  }
+
+  dismissAlerts(): void {
+    const ride = this.ride();
+    if (!ride) {
+      return;
+    }
+    this.dismissedAlertsService.dismiss(ride.id, issuesSignature(this.currentIssues()));
   }
 }
