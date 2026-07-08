@@ -1,12 +1,11 @@
 import { Ride } from './model';
-import { Staff } from '../staff/model';
-import { Schedule } from '../core/models';
+import { ParkLog, Schedule } from '../core/models';
 import { isPrincipalPilotLate } from '../core/pilot-status.util';
 
 export function rideDefaultIssues(
   ride: Ride | null | undefined,
   schedules: Schedule[] = [],
-  staffById: Record<number, Staff> = {}
+  logs: ParkLog[] = []
 ): string[] {
   const status = ride?.status;
   if (!status) {
@@ -31,7 +30,7 @@ export function rideDefaultIssues(
     issues.push('Ouverture deconnectee (deco/maint/etc.)');
   }
 
-  if (isPrincipalPilotLate(ride, schedules, staffById)) {
+  if (isPrincipalPilotLate(ride, schedules, logs)) {
     issues.push('Pilote principal en retard');
   }
 

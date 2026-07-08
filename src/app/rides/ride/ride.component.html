@@ -31,6 +31,8 @@
       />
       <label class="btn btn-outline-primary" for="alerteFilterOff">Toutes</label>
     </div>
+
+    <button type="button" class="btn btn-outline-secondary ms-auto" (click)="refresh()">&#8635; Actualiser</button>
   </div>
 
   @if (loading()) {

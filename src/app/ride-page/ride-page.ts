@@ -10,8 +10,8 @@ import { Staff } from '../staff/model';
 import { getRideStatusInfo } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
-import { getStaffFunctionLabel } from '../core/staff-function.util';
-import { getRideOpeningReferenceMinutes, isPrincipalJobFunction, parseHourToMinutes } from '../core/pilot-status.util';
+import { getRoleLabel } from '../core/staff-function.util';
+import { firstRideOpenMinutes, getRideOpeningReferenceMinutes, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
 import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
@@ -63,7 +63,10 @@ export class RidePage implements OnInit {
     if (!status) {
       return [];
     }
+    const ride = this.ride();
+    const logs = this.logs();
     const openingReference = this.openingReference();
+    const rideOpenedAt = firstRideOpenMinutes(ride, logs);
     const entries: PilotEntry[] = [];
     const pilots: [number | null, string | null][] = [
       [status.pilotId1, status.shiftStart1],
@@ -71,15 +74,15 @@ export class RidePage implements OnInit {
       [status.pilotId3, status.shiftStart3],
       [status.pilotId4, status.shiftStart4]
     ];
-    pilots.forEach(([pilotId, shiftStart]) => {
+    pilots.forEach(([pilotId, shiftStart], index) => {
       if (pilotId != null && pilotId > 0) {
         const formattedShiftStart = this.formatHour(shiftStart);
-        const isPrincipal = isPrincipalJobFunction(this.staffById()[pilotId]?.jobFunctionId);
+        const role = latestConnectionRole(ride, index, pilotId, logs);
         entries.push({
-          functionLabel: getStaffFunctionLabel(this.staffById()[pilotId]?.jobFunctionId),
+          functionLabel: getRoleLabel(role),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
-          rowClass: isPrincipal ? this.pilotRowClass(formattedShiftStart, openingReference) : ''
+          rowClass: isPrincipalRole(role) ? this.pilotRowClass(rideOpenedAt, openingReference) : ''
         });
       }
     });
@@ -99,7 +102,7 @@ export class RidePage implements OnInit {
 
   readonly rideSchedules = computed(() => rideScheduleRanges(this.ride(), this.schedules()));
 
-  readonly currentIssues = computed(() => rideDefaultIssues(this.ride(), this.schedules(), this.staffById()));
+  readonly currentIssues = computed(() => rideDefaultIssues(this.ride(), this.schedules(), this.logs()));
 
   readonly defaultAlerts = computed<RideDefaultAlert[]>(() => {
     const ride = this.ride();
@@ -248,9 +251,8 @@ export class RidePage implements OnInit {
       && target.getDate() === reference.getDate();
   }
 
-  private pilotRowClass(shiftStart: string | null | undefined, openingReference: number | null): string {
-    const connectedAt = parseHourToMinutes(shiftStart);
-    if (connectedAt == null) {
+  private pilotRowClass(connectedAtMinutes: number | null, openingReference: number | null): string {
+    if (connectedAtMinutes == null) {
       return '';
     }
 
@@ -258,7 +260,7 @@ export class RidePage implements OnInit {
       return 'pilot-row-success';
     }
 
-    return connectedAt > openingReference ? 'pilot-row-danger' : 'pilot-row-success';
+    return connectedAtMinutes > openingReference ? 'pilot-row-danger' : 'pilot-row-success';
   }
 
   private errorInfo(eventType: number | null, comments: string | null, userIds: string | null): { label: string; message: string } | null {
@@ -316,32 +318,8 @@ export class RidePage implements OnInit {
   }
 
   private resolvePilotName(raw: string): string | null {
-    const cleaned = raw.trim();
-    if (!cleaned) {
-      return null;
-    }
-
-    const asNumber = Number(cleaned);
-    if (!Number.isNaN(asNumber)) {
-      const resolvedById = this.staffName(asNumber);
-      return resolvedById.startsWith('#') ? null : resolvedById;
-    }
-
-    const lowered = cleaned.toLowerCase();
-    const byText = Object.values(this.staffById()).find((member) => {
-      const trigram = member.trigram?.trim().toLowerCase() ?? '';
-      const fullName = member.fullName?.trim().toLowerCase() ?? '';
-      const first = member.firstName?.trim().toLowerCase() ?? '';
-      const last = member.lastName?.trim().toLowerCase() ?? '';
-      const firstLast = `${first} ${last}`.trim();
-      return lowered === trigram || lowered === fullName || lowered === firstLast;
-    });
-
-    if (byText) {
-      return this.staffName(byText.id);
-    }
-
-    return null;
+    const staff = resolveStaffByToken(raw, this.staffById());
+    return staff ? this.staffName(staff.id) : null;
   }
 
   private logActorName(userIds: string | null, comments: string | null): string {

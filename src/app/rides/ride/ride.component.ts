@@ -2,11 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Ride } from '../model';
-import { Staff } from '../../staff/model';
-import { Schedule } from '../../core/models';
+import { ParkLog, Schedule } from '../../core/models';
 import { RidesService } from '../services/rides.service';
-import { StaffService } from '../../staff/services/staff.service';
 import { ScheduleService } from '../../core/schedule.service';
+import { LogsService } from '../../core/logs.service';
 import { RidesListComponent, RideListItem } from '../rides-list/rides-list.component';
 import { rideDefaultIssues } from '../default-issues.util';
 import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
@@ -26,15 +25,15 @@ interface RideAlertEntry {
 })
 export class RideComponent implements OnInit {
   private readonly ridesService = inject(RidesService);
-  private readonly staffService = inject(StaffService);
   private readonly scheduleService = inject(ScheduleService);
+  private readonly logsService = inject(LogsService);
   private readonly dismissedAlertsService = inject(DismissedAlertsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly rides = signal<Ride[]>([]);
-  readonly staffById = signal<Record<number, Staff>>({});
   readonly schedules = signal<Schedule[]>([]);
+  readonly logs = signal<ParkLog[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly search = signal('');
@@ -45,10 +44,10 @@ export class RideComponent implements OnInit {
 
   private readonly mappedItems = computed<RideListItem[]>(() => {
     const schedules = this.schedules();
-    const staffById = this.staffById();
+    const logs = this.logs();
 
     return this.rides().map((ride) => {
-      const issues = rideDefaultIssues(ride, schedules, staffById);
+      const issues = rideDefaultIssues(ride, schedules, logs);
       return {
         ride,
         issues,
@@ -98,32 +97,45 @@ export class RideComponent implements OnInit {
       this.rides.set(resolved);
       this.loading.set(false);
     } else {
-      this.ridesService.getRides().subscribe({
-        next: (rides) => {
-          this.rides.set(rides);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.error.set(true);
-          this.loading.set(false);
-        }
-      });
+      this.fetchRides();
     }
 
-    this.staffService.getStaff().subscribe({
-      next: (staff) => {
-        const map: Record<number, Staff> = {};
-        for (const member of staff) {
-          map[member.id] = member;
-        }
-        this.staffById.set(map);
-      },
-      error: () => this.staffById.set({})
-    });
+    this.fetchSchedules();
+    this.fetchLogs();
+  }
 
+  refresh(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.fetchRides();
+    this.fetchSchedules();
+    this.fetchLogs();
+  }
+
+  private fetchRides(): void {
+    this.ridesService.getRides().subscribe({
+      next: (rides) => {
+        this.rides.set(rides);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set(true);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private fetchSchedules(): void {
     this.scheduleService.getAll().subscribe({
       next: (schedules) => this.schedules.set(schedules),
       error: () => this.schedules.set([])
+    });
+  }
+
+  private fetchLogs(): void {
+    this.logsService.getAll().subscribe({
+      next: (logs) => this.logs.set(logs),
+      error: () => this.logs.set([])
     });
   }
 

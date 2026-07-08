@@ -1,12 +1,14 @@
 import { Ride } from '../rides/model';
 import { Staff } from '../staff/model';
-import { Schedule } from './models';
+import { ParkLog, Schedule } from './models';
 import { formatScheduleHour, rideScheduleRanges } from './ride-schedule.util';
+import { isSameCalendarDay } from './date.util';
 
-const PRINCIPAL_JOB_FUNCTION_ID = 1;
+const CONNECTION_EVENT_TYPE = 2;
+const PRINCIPAL_ROLE = 'Pilote';
 
-export function isPrincipalJobFunction(jobFunctionId: number | null | undefined): boolean {
-  return jobFunctionId === PRINCIPAL_JOB_FUNCTION_ID;
+export function isPrincipalRole(role: string | null | undefined): boolean {
+  return (role ?? '').trim() === PRINCIPAL_ROLE;
 }
 
 export function parseHourToMinutes(value: string | null | undefined): number | null {
@@ -29,34 +31,117 @@ export function getRideOpeningReferenceMinutes(ride: Ride | null | undefined, sc
   return openings[0] ?? null;
 }
 
-export function isPrincipalPilotLate(
-  ride: Ride | null | undefined,
-  schedules: Schedule[],
-  staffById: Record<number, Staff>
-): boolean {
-  const status = ride?.status;
-  if (!status) {
-    return false;
+export function resolveStaffByToken(raw: string, staffById: Record<number, Staff>): Staff | null {
+  const cleaned = raw.trim();
+  if (!cleaned) {
+    return null;
   }
 
+  const asNumber = Number(cleaned);
+  if (!Number.isNaN(asNumber) && staffById[asNumber]) {
+    return staffById[asNumber];
+  }
+
+  const lowered = cleaned.toLowerCase();
+  return Object.values(staffById).find((member) => {
+    const trigram = member.trigram?.trim().toLowerCase() ?? '';
+    const fullName = member.fullName?.trim().toLowerCase() ?? '';
+    const first = member.firstName?.trim().toLowerCase() ?? '';
+    const last = member.lastName?.trim().toLowerCase() ?? '';
+    const firstLast = `${first} ${last}`.trim();
+    return lowered === trigram || lowered === fullName || lowered === firstLast;
+  }) ?? null;
+}
+
+function connectionSlotIds(log: ParkLog): (number | null)[] {
+  return (log.userIds ?? '').split(';').map((token) => {
+    const id = Number(token.trim());
+    return Number.isNaN(id) || id <= 0 ? null : id;
+  });
+}
+
+/**
+ * A person's Staff.jobFunctionId is only their general qualification and is frequently
+ * inconsistent with what they're actually doing on a given shift (e.g. a jobFunctionId=1
+ * "principal" regularly shows up covering a "Zonard" slot instead). The connection log's own
+ * `comments` field ("Pilote" / "Operateur 1" / "Operateur 2" / "Zonard") is the reliable,
+ * per-shift ground truth for the role someone is filling for a specific connection - use that
+ * instead of the staff record.
+ */
+export function latestConnectionRole(
+  ride: Ride | null | undefined,
+  slotIndex: number,
+  staffId: number | null | undefined,
+  logs: ParkLog[]
+): string | null {
+  const rideId = ride?.id;
+  if (rideId == null || staffId == null) {
+    return null;
+  }
+
+  const matching = logs
+    .filter((log) => log.rideId === rideId && log.eventType === CONNECTION_EVENT_TYPE && log.recordedAt)
+    .filter((log) => connectionSlotIds(log)[slotIndex] === staffId)
+    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''));
+
+  const latest = matching[0];
+  if (!latest) {
+    return null;
+  }
+
+  const role = (latest.comments ?? '').trim();
+  return role || null;
+}
+
+const STATE_EVENT_TYPE = 9;
+const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';
+
+/**
+ * Which staff connection gets labeled "Pilote" is not a reliable signal of whether the ride opened
+ * on time: a ride is routinely run solo by whoever is present (often logged under an unrelated
+ * slot label like "Zonard") well before anyone happens to connect under the "Pilote" tag - e.g. a
+ * ride can open and start serving its queue at the scheduled hour while the "Pilote"-tagged
+ * connection only appears over an hour later, because that label tracks a paperwork/role
+ * designation, not who is actually operating the ride. So lateness can't be judged from any
+ * particular role's connection time. Instead, use the ride's own state-change log
+ * ("FERMEE-->OUVERTE" / "MAINTENANCE-->OUVERTE") as ground truth for when it actually opened.
+ *
+ * The live shiftStart on the ride status also can't be used directly, since it reflects only the
+ * latest connection and gets overwritten on every reconnect (e.g. after a maintenance-triggered
+ * disconnect), which would misreport a legitimate on-time arrival as late.
+ */
+export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLog[]): number | null {
+  const rideId = ride?.id;
+  if (rideId == null) {
+    return null;
+  }
+
+  const openTimes = logs
+    .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
+    .filter((log) => (log.comments ?? '').trim().endsWith(OPEN_TRANSITION_SUFFIX))
+    .map((log) => new Date(log.recordedAt as string))
+    .filter((date) => !Number.isNaN(date.getTime()));
+
+  if (!openTimes.length) {
+    return null;
+  }
+
+  const latestDay = openTimes.reduce((latest, current) => (current.getTime() > latest.getTime() ? current : latest));
+
+  const sameDayMinutes = openTimes
+    .filter((date) => isSameCalendarDay(date.toISOString(), latestDay))
+    .map((date) => date.getHours() * 60 + date.getMinutes())
+    .sort((left, right) => left - right);
+
+  return sameDayMinutes[0] ?? null;
+}
+
+export function isPrincipalPilotLate(ride: Ride | null | undefined, schedules: Schedule[], logs: ParkLog[]): boolean {
   const openingReference = getRideOpeningReferenceMinutes(ride, schedules);
   if (openingReference == null) {
     return false;
   }
 
-  const pilots: [number | null, string | null][] = [
-    [status.pilotId1, status.shiftStart1],
-    [status.pilotId2, status.shiftStart2],
-    [status.pilotId3, status.shiftStart3],
-    [status.pilotId4, status.shiftStart4]
-  ];
-
-  for (const [pilotId, shiftStart] of pilots) {
-    if (pilotId != null && pilotId > 0 && isPrincipalJobFunction(staffById[pilotId]?.jobFunctionId)) {
-      const connectedAt = parseHourToMinutes(shiftStart);
-      return connectedAt != null && connectedAt > openingReference;
-    }
-  }
-
-  return false;
+  const openedAt = firstRideOpenMinutes(ride, logs);
+  return openedAt != null && openedAt > openingReference;
 }
