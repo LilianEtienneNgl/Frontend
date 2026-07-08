@@ -2,9 +2,18 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Ride } from '../model';
+import { Staff } from '../../staff/model';
+import { Schedule } from '../../core/models';
 import { RidesService } from '../services/rides.service';
+import { StaffService } from '../../staff/services/staff.service';
+import { ScheduleService } from '../../core/schedule.service';
 import { RidesListComponent, RideListItem } from '../rides-list/rides-list.component';
 import { rideDefaultIssues } from '../default-issues.util';
+
+interface RideAlertEntry {
+  rideName: string;
+  message: string;
+}
 
 @Component({
   selector: 'app-ride-home-page',
@@ -14,10 +23,14 @@ import { rideDefaultIssues } from '../default-issues.util';
 })
 export class RideComponent implements OnInit {
   private readonly ridesService = inject(RidesService);
+  private readonly staffService = inject(StaffService);
+  private readonly scheduleService = inject(ScheduleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly rides = signal<Ride[]>([]);
+  readonly staffById = signal<Record<number, Staff>>({});
+  readonly schedules = signal<Schedule[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly search = signal('');
@@ -26,22 +39,26 @@ export class RideComponent implements OnInit {
   readonly sortKey = signal<'name'>('name');
   readonly sortDir = signal<'asc' | 'desc'>('asc');
 
-  readonly items = computed<RideListItem[]>(() => {
-    const term = this.search().trim().toLowerCase();
-    const alerteOnly = this.alerteOnly();
-    const sortKey = this.sortKey();
-    const sortDir = this.sortDir();
+  private readonly mappedItems = computed<RideListItem[]>(() => {
+    const schedules = this.schedules();
+    const staffById = this.staffById();
 
-    const mapped = this.rides().map((ride) => {
-      const issues = rideDefaultIssues(ride);
+    return this.rides().map((ride) => {
+      const issues = rideDefaultIssues(ride, schedules, staffById);
       return {
         ride,
         issues,
         isAlerte: issues.length > 0
       };
     });
+  });
 
-    const filtered = mapped.filter((item) => {
+  readonly items = computed<RideListItem[]>(() => {
+    const term = this.search().trim().toLowerCase();
+    const alerteOnly = this.alerteOnly();
+    const sortDir = this.sortDir();
+
+    const filtered = this.mappedItems().filter((item) => {
       const matchesSearch = !term || (item.ride.name ?? '').toLowerCase().includes(term);
       const matchesAlerte = !alerteOnly || item.isAlerte;
       return matchesSearch && matchesAlerte;
@@ -54,23 +71,47 @@ export class RideComponent implements OnInit {
     });
   });
 
+  readonly activeAlerts = computed<RideAlertEntry[]>(() => {
+    return this.mappedItems()
+      .filter((item) => item.isAlerte)
+      .flatMap((item) => item.issues.map((message) => ({
+        rideName: item.ride.name || 'Attraction sans nom',
+        message
+      })));
+  });
+
   ngOnInit(): void {
     const resolved = this.route.snapshot.data['rides'] as Ride[] | undefined;
     if (resolved && resolved.length >= 0) {
       this.rides.set(resolved);
       this.loading.set(false);
-      return;
+    } else {
+      this.ridesService.getRides().subscribe({
+        next: (rides) => {
+          this.rides.set(rides);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.error.set(true);
+          this.loading.set(false);
+        }
+      });
     }
 
-    this.ridesService.getRides().subscribe({
-      next: (rides) => {
-        this.rides.set(rides);
-        this.loading.set(false);
+    this.staffService.getStaff().subscribe({
+      next: (staff) => {
+        const map: Record<number, Staff> = {};
+        for (const member of staff) {
+          map[member.id] = member;
+        }
+        this.staffById.set(map);
       },
-      error: () => {
-        this.error.set(true);
-        this.loading.set(false);
-      }
+      error: () => this.staffById.set({})
+    });
+
+    this.scheduleService.getAll().subscribe({
+      next: (schedules) => this.schedules.set(schedules),
+      error: () => this.schedules.set([])
     });
   }
 

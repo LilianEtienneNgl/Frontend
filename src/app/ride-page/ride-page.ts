@@ -11,6 +11,7 @@ import { getRideStatusInfo } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getStaffFunctionLabel } from '../core/staff-function.util';
+import { getRideOpeningReferenceMinutes, isPrincipalJobFunction, parseHourToMinutes } from '../core/pilot-status.util';
 
 interface PilotEntry {
   functionLabel: string;
@@ -53,15 +54,7 @@ export class RidePage implements OnInit {
 
   readonly getRideStatusInfo = getRideStatusInfo;
 
-  readonly openingReference = computed(() => {
-    const openings = this.rideSchedules()
-      .map((range) => range.split(' - ')[0] ?? '-')
-      .map((value) => this.parseHourToMinutes(value))
-      .filter((value): value is number => value != null)
-      .sort((left, right) => left - right);
-
-    return openings[0] ?? null;
-  });
+  readonly openingReference = computed(() => getRideOpeningReferenceMinutes(this.ride(), this.schedules()));
 
   readonly pilotEntries = computed<PilotEntry[]>(() => {
     const status = this.ride()?.status;
@@ -79,11 +72,12 @@ export class RidePage implements OnInit {
     pilots.forEach(([pilotId, shiftStart]) => {
       if (pilotId != null && pilotId > 0) {
         const formattedShiftStart = this.formatHour(shiftStart);
+        const isPrincipal = isPrincipalJobFunction(this.staffById()[pilotId]?.jobFunctionId);
         entries.push({
           functionLabel: getStaffFunctionLabel(this.staffById()[pilotId]?.jobFunctionId),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
-          rowClass: this.pilotRowClass(formattedShiftStart, openingReference)
+          rowClass: isPrincipal ? this.pilotRowClass(formattedShiftStart, openingReference) : ''
         });
       }
     });
@@ -105,7 +99,7 @@ export class RidePage implements OnInit {
 
   readonly defaultAlerts = computed<RideDefaultAlert[]>(() => {
     const ride = this.ride();
-    const issues = rideDefaultIssues(ride);
+    const issues = rideDefaultIssues(ride, this.schedules(), this.staffById());
     if (!issues.length) {
       return [];
     }
@@ -247,18 +241,8 @@ export class RidePage implements OnInit {
       && target.getDate() === reference.getDate();
   }
 
-  private parseHourToMinutes(value: string | null | undefined): number | null {
-    const formatted = this.formatHour(value);
-    const match = formatted.match(/^(\d{2}):(\d{2})$/);
-    if (!match) {
-      return null;
-    }
-
-    return Number(match[1]) * 60 + Number(match[2]);
-  }
-
   private pilotRowClass(shiftStart: string | null | undefined, openingReference: number | null): string {
-    const connectedAt = this.parseHourToMinutes(shiftStart);
+    const connectedAt = parseHourToMinutes(shiftStart);
     if (connectedAt == null) {
       return '';
     }

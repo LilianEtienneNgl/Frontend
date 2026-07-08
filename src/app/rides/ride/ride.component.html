@@ -38,6 +38,21 @@
   } @else if (error()) {
     <div class="alert alert-danger">Impossible de charger les attractions depuis l'API.</div>
   } @else {
+    <div class="mb-3">
+      <h3 class="h6 text-uppercase text-muted">Alertes</h3>
+      @if (activeAlerts().length) {
+        <ul class="list-group">
+          @for (entry of activeAlerts(); track entry.rideName + '-' + entry.message) {
+            <li class="list-group-item list-group-item-warning mb-1">
+              <strong>{{ entry.rideName }}</strong> - {{ entry.message }}
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="text-muted mb-0">Aucune alerte actuellement.</p>
+      }
+    </div>
+
     <app-rides-list
       [items]="items()"
       [sortKey]="sortKey()"
