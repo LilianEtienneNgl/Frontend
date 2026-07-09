@@ -25,21 +25,23 @@
             </span>
           </td>
           <td>
-            <span class="small fw-semibold">&#128100; {{ connectedOperatorsCount(item.ride) }}</span>
-          </td>
-        </tr>
-        @if (item.issues.length) {
-          <tr class="table-warning-subtle">
-            <td colspan="3" class="small">
-              <div class="d-flex justify-content-between align-items-start">
-                <span><strong>Alerte:</strong> {{ item.issues.join(' | ') }}</span>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="small fw-semibold">&#128100; {{ connectedOperatorsCount(item.ride) }}</span>
+              @if (item.issues.length) {
                 <button
                   type="button"
                   class="btn-close"
                   aria-label="Supprimer la notification"
                   (click)="$event.stopPropagation(); dismissIssue.emit(item)"
                 ></button>
-              </div>
+              }
+            </div>
+          </td>
+        </tr>
+        @if (item.issues.length) {
+          <tr class="table-warning-subtle">
+            <td colspan="3" class="small">
+              <strong>Alerte:</strong> {{ item.issues.join(' | ') }}
             </td>
           </tr>
         }
