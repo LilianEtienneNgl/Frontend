@@ -7,7 +7,7 @@ import { ScheduleService } from '../core/schedule.service';
 import { ParkLog, Schedule } from '../core/models';
 import { Ride } from '../rides/model';
 import { Staff } from '../staff/model';
-import { getRideStatusInfo } from '../core/ride-status.util';
+import { getRideDisplayStatus } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getRoleLabel } from '../core/staff-function.util';
@@ -56,7 +56,7 @@ export class RidePage implements OnInit {
   readonly loading = signal(true);
   readonly error = signal(false);
 
-  readonly getRideStatusInfo = getRideStatusInfo;
+  readonly displayStatus = computed(() => getRideDisplayStatus(this.ride(), this.logs()));
 
   readonly pilotEntries = computed<PilotEntry[]>(() => {
     const status = this.ride()?.status;

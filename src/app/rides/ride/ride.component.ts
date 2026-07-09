@@ -9,6 +9,7 @@ import { LogsService } from '../../core/logs.service';
 import { RidesListComponent, RideListItem } from '../rides-list/rides-list.component';
 import { rideDefaultIssues } from '../default-issues.util';
 import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
+import { getRideDisplayStatus } from '../../core/ride-status.util';
 
 interface RideAlertEntry {
   rideId: number;
@@ -51,7 +52,8 @@ export class RideComponent implements OnInit {
       return {
         ride,
         issues,
-        isAlerte: issues.length > 0
+        isAlerte: issues.length > 0,
+        displayStatus: getRideDisplayStatus(ride, logs)
       };
     });
   });

@@ -27,10 +27,10 @@
 
     <ul class="list-group mb-3">
       <li class="list-group-item d-flex justify-content-between align-items-center">
-        <span class="fw-bold">Status</span>
+        <span class="fw-bold">Statut</span>
         <span class="d-flex align-items-center gap-2">
-          <span class="status-swatch status-swatch-lg" [class]="getRideStatusInfo(ride()!.status?.status).swatchClass"></span>
-          {{ getRideStatusInfo(ride()!.status?.status).label }}
+          <span class="status-swatch status-swatch-lg" [class]="displayStatus().swatchClass"></span>
+          {{ displayStatus().label }}
         </span>
       </li>
       <li class="list-group-item d-flex justify-content-between align-items-center">

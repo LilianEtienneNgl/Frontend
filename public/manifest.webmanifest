@@ -1,6 +1,6 @@
 {
-  "name": "Intra niglo mobile",
-  "short_name": "Intra niglo mobile",
+  "name": "IntraNiglo Mobile",
+  "short_name": "IntraNiglo Mobile",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

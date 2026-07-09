@@ -1,11 +1,12 @@
 import { Component, input, output } from '@angular/core';
 import { Ride } from '../model';
-import { getRideStatusInfo } from '../../core/ride-status.util';
+import { RideStatusInfo } from '../../core/ride-status.util';
 
 export interface RideListItem {
   ride: Ride;
   issues: string[];
   isAlerte: boolean;
+  displayStatus: RideStatusInfo;
 }
 
 @Component({
@@ -20,8 +21,6 @@ export class RidesListComponent {
 
   readonly sortChange = output<'name'>();
   readonly rideSelected = output<Ride>();
-
-  readonly getRideStatusInfo = getRideStatusInfo;
 
   toggleSort(key: 'name'): void {
     this.sortChange.emit(key);

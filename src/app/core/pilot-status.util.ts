@@ -190,6 +190,28 @@ function isOpeningDelayJustifiedByMaintenance(
   return false;
 }
 
+/**
+ * The most recent maintenance start/end log for the ride tells us whether it's currently in
+ * maintenance: if the latest of the two is a "Mise en Maintenance" with no "Fin de Maintenance"
+ * after it, the ride is still in that state right now.
+ */
+export function isRideCurrentlyInMaintenance(ride: Ride | null | undefined, logs: ParkLog[]): boolean {
+  const rideId = ride?.id;
+  if (rideId == null) {
+    return false;
+  }
+
+  const latest = logs
+    .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
+    .filter((log) => {
+      const comment = (log.comments ?? '').trim();
+      return comment === MAINTENANCE_START_COMMENT || comment === MAINTENANCE_END_COMMENT;
+    })
+    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''))[0];
+
+  return (latest?.comments ?? '').trim() === MAINTENANCE_START_COMMENT;
+}
+
 export function isPrincipalPilotLate(ride: Ride | null | undefined, schedules: Schedule[], logs: ParkLog[]): boolean {
   const openingReference = getRideOpeningReferenceMinutes(ride, schedules);
   if (openingReference == null) {

@@ -20,8 +20,8 @@
         <tr role="button" (click)="openRide(item.ride)" [class.table-warning]="item.isAlerte">
           <td>{{ item.ride.name || 'Attraction sans nom' }}</td>
           <td>
-            <span class="badge rounded-pill" [class]="getRideStatusInfo(item.ride.status?.status).badgeClass">
-              {{ getRideStatusInfo(item.ride.status?.status).label }}
+            <span class="badge rounded-pill" [class]="item.displayStatus.badgeClass">
+              {{ item.displayStatus.label }}
             </span>
           </td>
           <td>
