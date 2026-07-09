@@ -110,29 +110,29 @@ const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';
  * latest connection and gets overwritten on every reconnect (e.g. after a maintenance-triggered
  * disconnect), which would misreport a legitimate on-time arrival as late.
  */
+/**
+ * Only ever consider events from the actual current day. Clustering by "the most recent day that
+ * has any matching event" would let a ride's opening from yesterday (or whenever it last ran)
+ * keep being reported as today's opening on a day where nothing has happened yet - e.g. arriving
+ * before anyone has connected today would otherwise re-flag yesterday's already-resolved lateness.
+ */
 export function firstRideOpenLog(ride: Ride | null | undefined, logs: ParkLog[]): ParkLog | null {
   const rideId = ride?.id;
   if (rideId == null) {
     return null;
   }
 
+  const today = new Date();
+
   const candidates = logs
     .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
     .filter((log) => (log.comments ?? '').trim().endsWith(OPEN_TRANSITION_SUFFIX))
+    .filter((log) => isSameCalendarDay(log.recordedAt, today))
     .map((log) => ({ log, date: new Date(log.recordedAt as string) }))
-    .filter((entry) => !Number.isNaN(entry.date.getTime()));
-
-  if (!candidates.length) {
-    return null;
-  }
-
-  const latestDay = candidates.reduce((latest, current) => (current.date.getTime() > latest.date.getTime() ? current : latest)).date;
-
-  const sameDay = candidates
-    .filter((entry) => isSameCalendarDay(entry.date.toISOString(), latestDay))
+    .filter((entry) => !Number.isNaN(entry.date.getTime()))
     .sort((left, right) => left.date.getTime() - right.date.getTime());
 
-  return sameDay[0]?.log ?? null;
+  return candidates[0]?.log ?? null;
 }
 
 export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLog[]): number | null {
@@ -165,19 +165,13 @@ function isOpeningDelayJustifiedByMaintenance(
     return false;
   }
 
-  const stateLogs = logs
+  const today = new Date();
+
+  const sameDayLogs = logs
     .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
+    .filter((log) => isSameCalendarDay(log.recordedAt, today))
     .map((log) => ({ comment: (log.comments ?? '').trim(), date: new Date(log.recordedAt as string) }))
-    .filter((entry) => !Number.isNaN(entry.date.getTime()));
-
-  if (!stateLogs.length) {
-    return false;
-  }
-
-  const latestDay = stateLogs.reduce((latest, current) => (current.date.getTime() > latest.date.getTime() ? current : latest)).date;
-
-  const sameDayLogs = stateLogs
-    .filter((entry) => isSameCalendarDay(entry.date.toISOString(), latestDay))
+    .filter((entry) => !Number.isNaN(entry.date.getTime()))
     .sort((left, right) => left.date.getTime() - right.date.getTime());
 
   let maintenanceStart: number | null = null;
