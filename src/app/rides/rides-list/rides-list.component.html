@@ -30,8 +30,14 @@
         </tr>
         @if (item.issues.length) {
           <tr class="table-warning-subtle">
-            <td colspan="3" class="small">
-              <strong>Alerte:</strong> {{ item.issues.join(' | ') }}
+            <td colspan="3" class="small d-flex justify-content-between align-items-center">
+              <span><strong>Alerte:</strong> {{ item.issues.join(' | ') }}</span>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Supprimer la notification"
+                (click)="$event.stopPropagation(); dismissIssue.emit(item)"
+              ></button>
             </td>
           </tr>
         }

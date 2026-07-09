@@ -11,13 +11,6 @@ import { rideDefaultIssues } from '../default-issues.util';
 import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
 import { getRideDisplayStatus } from '../../core/ride-status.util';
 
-interface RideAlertEntry {
-  rideId: number;
-  rideName: string;
-  message: string;
-  issuesSignature: string;
-}
-
 @Component({
   selector: 'app-ride-home-page',
   imports: [FormsModule, RidesListComponent],
@@ -76,21 +69,14 @@ export class RideComponent implements OnInit {
     });
 
     return filtered.sort((a, b) => {
+      if (a.isAlerte !== b.isAlerte) {
+        return a.isAlerte ? -1 : 1;
+      }
+
       const direction = sortDir === 'asc' ? 1 : -1;
 
       return (a.ride.name ?? '').localeCompare(b.ride.name ?? '', 'fr', { sensitivity: 'base' }) * direction;
     });
-  });
-
-  readonly activeAlerts = computed<RideAlertEntry[]>(() => {
-    return this.visibleItems()
-      .filter((item) => item.isAlerte)
-      .flatMap((item) => item.issues.map((message) => ({
-        rideId: item.ride.id,
-        rideName: item.ride.name || 'Attraction sans nom',
-        message,
-        issuesSignature: issuesSignature(item.issues)
-      })));
   });
 
   ngOnInit(): void {
@@ -162,7 +148,7 @@ export class RideComponent implements OnInit {
     this.alerteOnly.set(enabled);
   }
 
-  dismissAlert(entry: RideAlertEntry): void {
-    this.dismissedAlertsService.dismiss(entry.rideId, entry.issuesSignature);
+  dismissAlert(item: RideListItem): void {
+    this.dismissedAlertsService.dismiss(item.ride.id, issuesSignature(item.issues));
   }
 }

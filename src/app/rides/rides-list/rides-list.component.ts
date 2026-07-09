@@ -21,6 +21,7 @@ export class RidesListComponent {
 
   readonly sortChange = output<'name'>();
   readonly rideSelected = output<Ride>();
+  readonly dismissIssue = output<RideListItem>();
 
   toggleSort(key: 'name'): void {
     this.sortChange.emit(key);

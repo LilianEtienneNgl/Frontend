@@ -15,8 +15,6 @@ export function rideDefaultIssues(
 
   const issues: string[] = [];
 
-  // A stale (not refreshed today) status is shown as "Inconnu", not "Fermée" - a ride that's
-  // simply closed for the day is normal and shouldn't be flagged as an issue.
   if (isSameCalendarDay(status.lastRefreshStatus, new Date()) && isRideCurrentlyInMaintenance(ride, logs)) {
     issues.push('Attraction en maintenance');
   }

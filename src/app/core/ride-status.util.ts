@@ -38,13 +38,6 @@ const UNKNOWN_STATUS: RideStatusInfo = {
   isMaintenance: false
 };
 
-/**
- * The raw status codes (1 = Ouverte, 0 = Fermée) only mean anything if the terminal is actually
- * still reporting in - a ride that hasn't refreshed today (e.g. a disconnected/decommissioned
- * screen) shouldn't be shown as "Fermée", since we don't actually know its state anymore, only
- * what it last reported. Maintenance isn't its own status code - it's derived from the ride's own
- * "Mise en Maintenance" / "Fin de Maintenance" log, same ground truth used for lateness.
- */
 export function getRideDisplayStatus(ride: Ride | null | undefined, logs: ParkLog[]): RideStatusInfo {
   const status = ride?.status;
   if (!status || !isSameCalendarDay(status.lastRefreshStatus, new Date())) {

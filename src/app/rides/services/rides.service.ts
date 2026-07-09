@@ -15,7 +15,6 @@ export class RidesService {
     return this.http.get<Ride>(`/api/rides/${id}`);
   }
 
-  // Backward compatible aliases.
   getAll(): Observable<Ride[]> {
     return this.getRides();
   }
