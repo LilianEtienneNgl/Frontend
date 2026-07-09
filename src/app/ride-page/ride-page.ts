@@ -10,8 +10,8 @@ import { Staff } from '../staff/model';
 import { getRideDisplayStatus } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
-import { getRoleLabel } from '../core/staff-function.util';
-import { firstRideOpenLog, firstRideOpenMinutes, isPrincipalPilotLate, isPrincipalRole, latestConnectionRole, resolveStaffByToken } from '../core/pilot-status.util';
+import { getSlotRoleLabel } from '../core/staff-function.util';
+import { firstRideOpenLog, firstRideOpenMinutes, isPrincipalPilotLate, resolveStaffByToken } from '../core/pilot-status.util';
 import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
@@ -77,12 +77,11 @@ export class RidePage implements OnInit {
     pilots.forEach(([pilotId, shiftStart], index) => {
       if (pilotId != null && pilotId > 0) {
         const formattedShiftStart = this.formatHour(shiftStart);
-        const role = latestConnectionRole(ride, index, pilotId, logs);
         entries.push({
-          functionLabel: getRoleLabel(role),
+          functionLabel: getSlotRoleLabel(index),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
-          rowClass: isPrincipalRole(role) ? this.pilotRowClass(rideOpenedAt, late) : ''
+          rowClass: index === 0 ? this.pilotRowClass(rideOpenedAt, late) : ''
         });
       }
     });

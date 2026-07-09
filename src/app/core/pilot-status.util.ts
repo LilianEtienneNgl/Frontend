@@ -4,13 +4,6 @@ import { ParkLog, Schedule } from './models';
 import { formatScheduleHour, rideScheduleRanges } from './ride-schedule.util';
 import { isSameCalendarDay } from './date.util';
 
-const CONNECTION_EVENT_TYPE = 2;
-const PRINCIPAL_ROLE = 'Pilote';
-
-export function isPrincipalRole(role: string | null | undefined): boolean {
-  return (role ?? '').trim() === PRINCIPAL_ROLE;
-}
-
 export function parseHourToMinutes(value: string | null | undefined): number | null {
   const formatted = formatScheduleHour(value);
   const match = formatted.match(/^(\d{2}):(\d{2})$/);
@@ -53,46 +46,6 @@ export function resolveStaffByToken(raw: string, staffById: Record<number, Staff
   }) ?? null;
 }
 
-function connectionSlotIds(log: ParkLog): (number | null)[] {
-  return (log.userIds ?? '').split(';').map((token) => {
-    const id = Number(token.trim());
-    return Number.isNaN(id) || id <= 0 ? null : id;
-  });
-}
-
-/**
- * A person's Staff.jobFunctionId is only their general qualification and is frequently
- * inconsistent with what they're actually doing on a given shift (e.g. a jobFunctionId=1
- * "principal" regularly shows up covering a "Zonard" slot instead). The connection log's own
- * `comments` field ("Pilote" / "Operateur 1" / "Operateur 2" / "Zonard") is the reliable,
- * per-shift ground truth for the role someone is filling for a specific connection - use that
- * instead of the staff record.
- */
-export function latestConnectionRole(
-  ride: Ride | null | undefined,
-  slotIndex: number,
-  staffId: number | null | undefined,
-  logs: ParkLog[]
-): string | null {
-  const rideId = ride?.id;
-  if (rideId == null || staffId == null) {
-    return null;
-  }
-
-  const matching = logs
-    .filter((log) => log.rideId === rideId && log.eventType === CONNECTION_EVENT_TYPE && log.recordedAt)
-    .filter((log) => connectionSlotIds(log)[slotIndex] === staffId)
-    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''));
-
-  const latest = matching[0];
-  if (!latest) {
-    return null;
-  }
-
-  const role = (latest.comments ?? '').trim();
-  return role || null;
-}
-
 const STATE_EVENT_TYPE = 9;
 const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';
 
@@ -109,8 +62,7 @@ const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';
  * The live shiftStart on the ride status also can't be used directly, since it reflects only the
  * latest connection and gets overwritten on every reconnect (e.g. after a maintenance-triggered
  * disconnect), which would misreport a legitimate on-time arrival as late.
- */
-/**
+ *
  * Only ever consider events from the actual current day. Clustering by "the most recent day that
  * has any matching event" would let a ride's opening from yesterday (or whenever it last ran)
  * keep being reported as today's opening on a day where nothing has happened yet - e.g. arriving
