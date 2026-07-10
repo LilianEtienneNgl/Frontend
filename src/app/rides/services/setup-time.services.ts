@@ -30,7 +30,8 @@ const SETUP_TIME_MINUTES_BY_RIDE_ID: Readonly<Record<number, number>> = {
   1: 45, // TRAIN
   19: 45, // SPATIALE EXPERIENCE
   43: 75, // KRAMPUS EXPEDITION
-  40: 90 // ALPINA BLITZ
+  40: 90, // ALPINA BLITZ
+  12: 15 // MONTGOLFIERES
 };
 
 export function getSetupTimeMinutes(rideId: number | null | undefined): number {
