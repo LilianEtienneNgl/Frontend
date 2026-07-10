@@ -17,7 +17,7 @@
     </thead>
     <tbody>
       @for (item of items(); track item.ride.id) {
-        <tr role="button" (click)="openRide(item.ride)" [class.table-warning]="item.isAlerte">
+        <tr role="button" (click)="openRide(item.ride)" [class.table-danger]="item.isAlerte">
           <td>{{ item.ride.name || 'Attraction sans nom' }}</td>
           <td>
             <span class="badge rounded-pill" [class]="item.displayStatus.badgeClass">
@@ -28,27 +28,23 @@
             <div class="d-flex justify-content-between align-items-center">
               <span class="small fw-semibold">&#128100; {{ connectedOperatorsCount(item.ride) }}</span>
               @if (item.issues.length) {
-                <button
-                  type="button"
-                  class="btn-close"
-                  aria-label="Supprimer la notification"
-                  (click)="$event.stopPropagation(); dismissIssue.emit(item)"
-                ></button>
+              <button type="button" class="btn-close" aria-label="Supprimer la notification"
+                (click)="$event.stopPropagation(); dismissIssue.emit(item)"></button>
               }
             </div>
           </td>
         </tr>
         @if (item.issues.length) {
-          <tr class="table-warning-subtle">
-            <td colspan="3" class="small">
-              <strong>Alerte:</strong> {{ issueMessages(item.issues) }}
-            </td>
-          </tr>
-        }
-      } @empty {
-        <tr>
-          <td colspan="3" class="text-muted">Aucune attraction ne correspond au filtre.</td>
+        <tr class="table-danger-subtle" (click)="openRide(item.ride)" role="button">
+          <td colspan="3" class="small">
+            <strong>Alerte:</strong> {{ issueMessages(item.issues) }}
+          </td>
         </tr>
+      }
+      } @empty {
+      <tr>
+        <td colspan="3" class="text-muted">Aucune attraction ne correspond au filtre.</td>
+      </tr>
       }
     </tbody>
   </table>
