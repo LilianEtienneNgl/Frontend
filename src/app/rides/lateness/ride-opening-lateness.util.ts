@@ -9,13 +9,6 @@ const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
 const MAINTENANCE_END_COMMENT = 'Fin de Maintenance';
 const LATE_GRACE_MINUTES = 1;
 
-/**
- * Whether the ride itself opened on schedule - independent of any specific staff member. Uses the
- * ride's own state-change log ("FERMEE-->OUVERTE" / "MAINTENANCE-->OUVERTE") as ground truth for
- * when it actually started operating, since a ride is routinely run before anyone happens to
- * connect under a specific role label. See principal-login-lateness.util.ts for the separate,
- * person-specific "did the Pilote principal show up on time" signal.
- */
 export function firstRideOpenLog(ride: Ride | null | undefined, logs: ParkLog[]): ParkLog | null {
   const rideId = ride?.id;
   if (rideId == null) {
@@ -45,11 +38,6 @@ export function firstRideOpenMinutes(ride: Ride | null | undefined, logs: ParkLo
   return Number.isNaN(date.getTime()) ? null : date.getHours() * 60 + date.getMinutes();
 }
 
-/**
- * A ride can fail to open on schedule for a reason that has nothing to do with staffing: it was
- * placed in maintenance and only came back up after the scheduled opening time. If a logged
- * maintenance window spans the scheduled opening minute, the delay is explained by that.
- */
 function isOpeningDelayJustifiedByMaintenance(
   ride: Ride | null | undefined,
   logs: ParkLog[],

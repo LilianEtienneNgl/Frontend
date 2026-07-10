@@ -357,7 +357,8 @@ export class RidePage implements OnInit {
       }
     }
 
-    return this.resolvePilotName((comments ?? '').trim()) ?? 'Inconnu';
+    const rawComments = (comments ?? '').trim();
+    return this.resolvePilotName(rawComments) ?? (rawComments || 'Inconnu');
   }
 
   goBack(): void {
