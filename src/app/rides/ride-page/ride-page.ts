@@ -357,7 +357,8 @@ export class RidePage implements OnInit {
     }
 
     const rawComments = (comments ?? '').trim();
-    return this.resolvePilotName(rawComments) ?? this.supportStaffNameAt(recordedAt) ?? (rawComments || 'Inconnu');
+    const displayComments = rawComments === 'NigloLand' ? 'Staff' : rawComments;
+    return this.resolvePilotName(rawComments) ?? this.supportStaffNameAt(recordedAt) ?? (displayComments || 'Inconnu');
   }
 
   /**
