@@ -175,7 +175,7 @@ export class RidePage implements OnInit {
       .filter((log) => this.isSameDay(log.recordedAt, latestLogDay))
       .sort((a, b) => (b.recordedAt ?? '').localeCompare(a.recordedAt ?? ''))
       .flatMap((log) => {
-        const info = this.errorInfo(log.eventType, log.comments, log.userIds);
+        const info = this.errorInfo(log.eventType, log.comments, log.userIds, log.recordedAt);
         if (!info) {
           return [];
         }
@@ -282,9 +282,9 @@ export class RidePage implements OnInit {
     return isLate ? 'pilot-row-danger' : 'pilot-row-success';
   }
 
-  private errorInfo(eventType: number | null, comments: string | null, userIds: string | null): { label: string; message: string } | null {
+  private errorInfo(eventType: number | null, comments: string | null, userIds: string | null, recordedAt: string | null): { label: string; message: string } | null {
     const raw = (comments ?? '').trim();
-    const actorName = this.logActorName(userIds, comments);
+    const actorName = this.logActorName(userIds, comments, recordedAt);
     switch (eventType) {
       case 2:
         return {
@@ -341,7 +341,7 @@ export class RidePage implements OnInit {
     return staff ? this.staffName(staff.id) : null;
   }
 
-  private logActorName(userIds: string | null, comments: string | null): string {
+  private logActorName(userIds: string | null, comments: string | null, recordedAt: string | null): string {
     const normalizedUserIds = (userIds ?? '').trim();
     if (normalizedUserIds) {
       const resolvedNames = normalizedUserIds
@@ -358,7 +358,26 @@ export class RidePage implements OnInit {
     }
 
     const rawComments = (comments ?? '').trim();
-    return this.resolvePilotName(rawComments) ?? (rawComments || 'Inconnu');
+    return this.resolvePilotName(rawComments) ?? this.supportStaffNameAt(recordedAt) ?? (rawComments || 'Inconnu');
+  }
+
+  /**
+   * A support staff connection (comments "NigloLand") isn't one of the 4 numbered pilot slots, so
+   * it never carries an id in userIds - the identity only lives in the ride's live status.staffId
+   * field. That field gets cleared back to -1 once they disconnect, so this only resolves while
+   * they're still connected, but it matches the same data the "Staff:" line already reads.
+   */
+  private supportStaffNameAt(recordedAt: string | null): string | null {
+    const status = this.ride()?.status;
+    if (!status || status.staffId == null || status.staffId <= 0 || !recordedAt) {
+      return null;
+    }
+
+    if (this.formatHour(status.staffShiftStart) !== this.formatHour(recordedAt)) {
+      return null;
+    }
+
+    return this.staffName(status.staffId);
   }
 
   goBack(): void {
