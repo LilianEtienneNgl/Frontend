@@ -41,21 +41,29 @@ const STATE_EVENT_TYPE = 9;
 const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
 const MAINTENANCE_END_COMMENT = 'Fin de Maintenance';
 
-export function isRideCurrentlyInMaintenance(ride: Ride | null | undefined, logs: ParkLog[]): boolean {
+function latestMaintenanceTransitionLog(ride: Ride | null | undefined, logs: ParkLog[]): ParkLog | null {
   const rideId = ride?.id;
   if (rideId == null) {
-    return false;
+    return null;
   }
 
-  const latest = logs
+  return logs
     .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
     .filter((log) => {
       const comment = (log.comments ?? '').trim();
       return comment === MAINTENANCE_START_COMMENT || comment === MAINTENANCE_END_COMMENT;
     })
-    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''))[0];
+    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''))[0] ?? null;
+}
 
+export function isRideCurrentlyInMaintenance(ride: Ride | null | undefined, logs: ParkLog[]): boolean {
+  const latest = latestMaintenanceTransitionLog(ride, logs);
   return (latest?.comments ?? '').trim() === MAINTENANCE_START_COMMENT;
+}
+
+export function currentMaintenanceStartLog(ride: Ride | null | undefined, logs: ParkLog[]): ParkLog | null {
+  const latest = latestMaintenanceTransitionLog(ride, logs);
+  return latest && (latest.comments ?? '').trim() === MAINTENANCE_START_COMMENT ? latest : null;
 }
 
 export function getRideDisplayStatus(ride: Ride | null | undefined, logs: ParkLog[]): RideStatusInfo {

@@ -112,14 +112,13 @@ export class RidePage implements OnInit {
     if (!issues.length || !ride) {
       return [];
     }
-    if (this.dismissedAlertsService.isDismissed(ride.id, issuesSignature(issues))) {
+    if (this.dismissedAlertsService.isDismissed(ride.id, issuesSignature(issues.map((issue) => issue.message)))) {
       return [];
     }
 
-    const alertHour = this.formatHour(ride.status?.lastRefreshStatus);
-    return issues.map((message) => ({
-      hour: alertHour,
-      message,
+    return issues.map((issue) => ({
+      hour: this.formatHour(issue.at ?? ride.status?.lastRefreshStatus),
+      message: issue.message,
     }));
   });
 
@@ -389,6 +388,6 @@ export class RidePage implements OnInit {
     if (!ride) {
       return;
     }
-    this.dismissedAlertsService.dismiss(ride.id, issuesSignature(this.currentIssues()));
+    this.dismissedAlertsService.dismiss(ride.id, issuesSignature(this.currentIssues().map((issue) => issue.message)));
   }
 }

@@ -1,10 +1,11 @@
 import { Component, input, output } from '@angular/core';
 import { Ride } from '../model';
 import { RideStatusInfo } from '../ride-status.util';
+import { RideIssue } from '../default-issues.util';
 
 export interface RideListItem {
   ride: Ride;
-  issues: string[];
+  issues: RideIssue[];
   isAlerte: boolean;
   displayStatus: RideStatusInfo;
 }
@@ -50,5 +51,9 @@ export class RidesListComponent {
       return '';
     }
     return this.sortDir() === 'asc' ? '(↑)' : '(↓)';
+  }
+
+  issueMessages(issues: RideIssue[]): string {
+    return issues.map((issue) => issue.message).join(' | ');
   }
 }

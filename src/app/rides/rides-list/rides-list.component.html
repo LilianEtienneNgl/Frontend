@@ -41,7 +41,7 @@
         @if (item.issues.length) {
           <tr class="table-warning-subtle">
             <td colspan="3" class="small">
-              <strong>Alerte:</strong> {{ item.issues.join(' | ') }}
+              <strong>Alerte:</strong> {{ issueMessages(item.issues) }}
             </td>
           </tr>
         }

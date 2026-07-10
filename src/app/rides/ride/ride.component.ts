@@ -53,7 +53,7 @@ export class RideComponent implements OnInit {
 
   private readonly visibleItems = computed<RideListItem[]>(() => {
     return this.mappedItems().filter(
-      (item) => !this.dismissedAlertsService.isDismissed(item.ride.id, issuesSignature(item.issues))
+      (item) => !this.dismissedAlertsService.isDismissed(item.ride.id, issuesSignature(item.issues.map((issue) => issue.message)))
     );
   });
 
@@ -149,6 +149,6 @@ export class RideComponent implements OnInit {
   }
 
   dismissAlert(item: RideListItem): void {
-    this.dismissedAlertsService.dismiss(item.ride.id, issuesSignature(item.issues));
+    this.dismissedAlertsService.dismiss(item.ride.id, issuesSignature(item.issues.map((issue) => issue.message)));
   }
 }
