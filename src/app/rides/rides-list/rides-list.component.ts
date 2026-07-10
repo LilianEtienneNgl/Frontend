@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { Ride } from '../model';
-import { RideStatusInfo } from '../../core/ride-status.util';
+import { RideStatusInfo } from '../ride-status.util';
 
 export interface RideListItem {
   ride: Ride;

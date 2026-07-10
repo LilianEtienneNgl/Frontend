@@ -1,5 +1,5 @@
-import { Ride } from '../rides/model';
-import { Schedule } from './models';
+import { Ride } from './model';
+import { Schedule } from '../core/models';
 
 export function formatScheduleHour(value: string | null | undefined): string {
   if (!value) {
@@ -51,4 +51,24 @@ export function rideScheduleRanges(ride: Ride | null | undefined, schedules: Sch
   }
 
   return [`${open} - ${close}`];
+}
+
+function parseHourToMinutes(value: string | null | undefined): number | null {
+  const formatted = formatScheduleHour(value);
+  const match = formatted.match(/^(\d{2}):(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+export function getRideOpeningReferenceMinutes(ride: Ride | null | undefined, schedules: Schedule[]): number | null {
+  const openings = rideScheduleRanges(ride, schedules)
+    .map((range) => range.split(' - ')[0] ?? '-')
+    .map((value) => parseHourToMinutes(value))
+    .filter((value): value is number => value != null)
+    .sort((left, right) => left - right);
+
+  return openings[0] ?? null;
 }

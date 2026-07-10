@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { RideComponent } from './rides/ride/ride.component';
-import { RidePage } from './ride-page/ride-page';
+import { RidePage } from './rides/ride-page/ride-page';
 import { ridesResolver } from './rides/resolvers/rides.resolver';
 import { rideResolver } from './rides/resolvers/ride.resolver';
 

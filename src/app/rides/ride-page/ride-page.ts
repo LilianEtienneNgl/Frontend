@@ -1,20 +1,20 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RidesService } from '../rides/services/rides.service';
-import { StaffService } from '../staff/services/staff.service';
-import { LogsService } from '../core/logs.service';
-import { ScheduleService } from '../core/schedule.service';
-import { ParkLog, Schedule } from '../core/models';
-import { Ride } from '../rides/model';
-import { Staff } from '../staff/model';
-import { getRideDisplayStatus } from '../core/ride-status.util';
-import { rideDefaultIssues } from '../rides/default-issues.util';
-import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
-import { getSlotRoleLabel } from '../core/staff-function.util';
-import { resolveStaffByToken } from '../core/pilot-status.util';
-import { firstRideOpenLog, isRideOpeningLate } from '../core/lateness/ride-opening-lateness.util';
-import { firstPrincipalConnection, isPrincipalLoginLate } from '../core/lateness/principal-login-lateness.util';
-import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
+import { RidesService } from '../services/rides.service';
+import { StaffService } from '../../staff/services/staff.service';
+import { LogsService } from '../../core/logs.service';
+import { ScheduleService } from '../../core/schedule.service';
+import { ParkLog, Schedule } from '../../core/models';
+import { Ride } from '../model';
+import { Staff } from '../../staff/model';
+import { getRideDisplayStatus } from '../ride-status.util';
+import { rideDefaultIssues } from '../default-issues.util';
+import { formatScheduleHour, rideScheduleRanges } from '../ride-schedule.util';
+import { getSlotRoleLabel } from '../../staff/staff-function.util';
+import { resolveStaffByToken } from '../../staff/staff-lookup.util';
+import { firstRideOpenLog, isRideOpeningLate } from '../lateness/ride-opening-lateness.util';
+import { firstPrincipalConnection, isPrincipalLoginLate } from '../lateness/principal-login-lateness.util';
+import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
 
 interface PilotEntry {
   functionLabel: string;

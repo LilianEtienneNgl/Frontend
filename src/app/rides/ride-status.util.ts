@@ -1,7 +1,6 @@
-import { Ride } from '../rides/model';
-import { ParkLog } from './models';
-import { isSameCalendarDay } from './date.util';
-import { isRideCurrentlyInMaintenance } from './pilot-status.util';
+import { Ride } from './model';
+import { ParkLog } from '../core/models';
+import { isSameCalendarDay } from '../core/date.util';
 
 export interface RideStatusInfo {
   label: string;
@@ -37,6 +36,27 @@ const UNKNOWN_STATUS: RideStatusInfo = {
   badgeClass: 'text-bg-light border',
   isMaintenance: false
 };
+
+const STATE_EVENT_TYPE = 9;
+const MAINTENANCE_START_COMMENT = 'Mise en Maintenance';
+const MAINTENANCE_END_COMMENT = 'Fin de Maintenance';
+
+export function isRideCurrentlyInMaintenance(ride: Ride | null | undefined, logs: ParkLog[]): boolean {
+  const rideId = ride?.id;
+  if (rideId == null) {
+    return false;
+  }
+
+  const latest = logs
+    .filter((log) => log.rideId === rideId && log.eventType === STATE_EVENT_TYPE && log.recordedAt)
+    .filter((log) => {
+      const comment = (log.comments ?? '').trim();
+      return comment === MAINTENANCE_START_COMMENT || comment === MAINTENANCE_END_COMMENT;
+    })
+    .sort((left, right) => (right.recordedAt ?? '').localeCompare(left.recordedAt ?? ''))[0];
+
+  return (latest?.comments ?? '').trim() === MAINTENANCE_START_COMMENT;
+}
 
 export function getRideDisplayStatus(ride: Ride | null | undefined, logs: ParkLog[]): RideStatusInfo {
   const status = ride?.status;

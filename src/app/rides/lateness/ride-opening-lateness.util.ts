@@ -1,7 +1,7 @@
-import { Ride } from '../../rides/model';
-import { ParkLog, Schedule } from '../models';
-import { getRideOpeningReferenceMinutes } from '../pilot-status.util';
-import { isSameCalendarDay } from '../date.util';
+import { Ride } from '../model';
+import { ParkLog, Schedule } from '../../core/models';
+import { getRideOpeningReferenceMinutes } from '../ride-schedule.util';
+import { isSameCalendarDay } from '../../core/date.util';
 
 const STATE_EVENT_TYPE = 9;
 const OPEN_TRANSITION_SUFFIX = '-->OUVERTE';

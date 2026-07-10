@@ -9,7 +9,7 @@ import { LogsService } from '../../core/logs.service';
 import { RidesListComponent, RideListItem } from '../rides-list/rides-list.component';
 import { rideDefaultIssues } from '../default-issues.util';
 import { DismissedAlertsService, issuesSignature } from '../../core/dismissed-alerts.service';
-import { getRideDisplayStatus } from '../../core/ride-status.util';
+import { getRideDisplayStatus } from '../ride-status.util';
 
 @Component({
   selector: 'app-ride-home-page',

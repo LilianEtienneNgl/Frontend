@@ -1,8 +1,8 @@
 import { Ride } from './model';
 import { ParkLog, Schedule } from '../core/models';
-import { isRideCurrentlyInMaintenance } from '../core/pilot-status.util';
-import { isRideOpeningLate } from '../core/lateness/ride-opening-lateness.util';
-import { isPrincipalLoginLate } from '../core/lateness/principal-login-lateness.util';
+import { isRideCurrentlyInMaintenance } from './ride-status.util';
+import { isRideOpeningLate } from './lateness/ride-opening-lateness.util';
+import { isPrincipalLoginLate } from './lateness/principal-login-lateness.util';
 import { isSameCalendarDay } from '../core/date.util';
 
 export function rideDefaultIssues(
