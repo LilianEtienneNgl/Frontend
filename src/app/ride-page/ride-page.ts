@@ -11,7 +11,9 @@ import { getRideDisplayStatus } from '../core/ride-status.util';
 import { rideDefaultIssues } from '../rides/default-issues.util';
 import { formatScheduleHour, rideScheduleRanges } from '../core/ride-schedule.util';
 import { getSlotRoleLabel } from '../core/staff-function.util';
-import { firstRideOpenLog, firstRideOpenMinutes, isPrincipalPilotLate, resolveStaffByToken } from '../core/pilot-status.util';
+import { resolveStaffByToken } from '../core/pilot-status.util';
+import { firstRideOpenLog, isRideOpeningLate } from '../core/lateness/ride-opening-lateness.util';
+import { firstPrincipalConnection, isPrincipalLoginLate } from '../core/lateness/principal-login-lateness.util';
 import { DismissedAlertsService, issuesSignature } from '../core/dismissed-alerts.service';
 
 interface PilotEntry {
@@ -27,6 +29,7 @@ interface RideErrorLog {
   message: string;
   recordedAt: string | null;
   isLateOpening: boolean;
+  isLatePrincipalLogin: boolean;
 }
 
 interface RideDefaultAlert {
@@ -65,8 +68,8 @@ export class RidePage implements OnInit {
     }
     const ride = this.ride();
     const logs = this.logs();
-    const rideOpenedAt = firstRideOpenMinutes(ride, logs);
-    const late = isPrincipalPilotLate(ride, this.schedules(), logs);
+    const principalConnection = firstPrincipalConnection(ride, logs);
+    const late = isPrincipalLoginLate(ride, this.schedules(), logs);
     const entries: PilotEntry[] = [];
     const pilots: [number | null, string | null][] = [
       [status.pilotId1, status.shiftStart1],
@@ -81,7 +84,7 @@ export class RidePage implements OnInit {
           functionLabel: getSlotRoleLabel(index),
           name: this.staffName(pilotId),
           shiftStart: formattedShiftStart,
-          rowClass: index === 0 ? this.pilotRowClass(rideOpenedAt, late) : ''
+          rowClass: index === 0 ? this.pilotRowClass(principalConnection, late) : ''
         });
       }
     });
@@ -143,16 +146,25 @@ export class RidePage implements OnInit {
 
   readonly lateOpeningLogId = computed<number | null>(() => {
     const ride = this.ride();
-    if (!isPrincipalPilotLate(ride, this.schedules(), this.logs())) {
+    if (!isRideOpeningLate(ride, this.schedules(), this.logs())) {
       return null;
     }
     return firstRideOpenLog(ride, this.logs())?.id ?? null;
+  });
+
+  readonly latePrincipalLoginLogId = computed<number | null>(() => {
+    const ride = this.ride();
+    if (!isPrincipalLoginLate(ride, this.schedules(), this.logs())) {
+      return null;
+    }
+    return firstPrincipalConnection(ride, this.logs())?.id ?? null;
   });
 
   readonly rideErrorLogs = computed<RideErrorLog[]>(() => {
     const rideId = this.ride()?.id;
     const latestLogDay = this.latestLogDay();
     const lateOpeningLogId = this.lateOpeningLogId();
+    const latePrincipalLoginLogId = this.latePrincipalLoginLogId();
 
     if (rideId == null || latestLogDay == null) {
       return [];
@@ -172,7 +184,8 @@ export class RidePage implements OnInit {
           label: info.label,
           message: info.message,
           recordedAt: log.recordedAt,
-          isLateOpening: log.id === lateOpeningLogId
+          isLateOpening: log.id === lateOpeningLogId,
+          isLatePrincipalLogin: log.id === latePrincipalLoginLogId
         }];
       });
   });
@@ -261,8 +274,8 @@ export class RidePage implements OnInit {
       && target.getDate() === reference.getDate();
   }
 
-  private pilotRowClass(rideOpenedAtMinutes: number | null, isLate: boolean): string {
-    if (rideOpenedAtMinutes == null) {
+  private pilotRowClass(principalConnection: ParkLog | null, isLate: boolean): string {
+    if (principalConnection == null) {
       return '';
     }
 

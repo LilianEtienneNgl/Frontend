@@ -1,6 +1,8 @@
 import { Ride } from './model';
 import { ParkLog, Schedule } from '../core/models';
-import { isPrincipalPilotLate, isRideCurrentlyInMaintenance } from '../core/pilot-status.util';
+import { isRideCurrentlyInMaintenance } from '../core/pilot-status.util';
+import { isRideOpeningLate } from '../core/lateness/ride-opening-lateness.util';
+import { isPrincipalLoginLate } from '../core/lateness/principal-login-lateness.util';
 import { isSameCalendarDay } from '../core/date.util';
 
 export function rideDefaultIssues(
@@ -19,7 +21,11 @@ export function rideDefaultIssues(
     issues.push('Attraction en maintenance');
   }
 
-  if (isPrincipalPilotLate(ride, schedules, logs)) {
+  if (isRideOpeningLate(ride, schedules, logs)) {
+    issues.push('Ouverture en retard');
+  }
+
+  if (isPrincipalLoginLate(ride, schedules, logs)) {
     issues.push('Pilote principal en retard');
   }
 

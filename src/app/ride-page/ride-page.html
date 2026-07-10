@@ -86,13 +86,16 @@
     <h3 class="h6 text-uppercase text-muted">Historique</h3>
     <ul class="list-group">
       @for (entry of rideErrorLogs(); track entry.id) {
-        <li class="list-group-item" [class.list-group-item-danger]="entry.isLateOpening">
+        <li class="list-group-item" [class.list-group-item-danger]="entry.isLateOpening || entry.isLatePrincipalLogin">
           <div class="d-flex align-items-start gap-3">
             <span class="text-muted small flex-shrink-0">{{ formatHour(entry.recordedAt) }}</span>
             <div class="flex-grow-1 text-end">
               <div class="fw-bold">
                 {{ entry.label }}
                 @if (entry.isLateOpening) {
+                  <span class="badge text-bg-danger ms-1">Ouverture en retard</span>
+                }
+                @if (entry.isLatePrincipalLogin) {
                   <span class="badge text-bg-danger ms-1">Pilote principal en retard</span>
                 }
               </div>
