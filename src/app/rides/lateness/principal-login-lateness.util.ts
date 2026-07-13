@@ -48,11 +48,6 @@ function firstPrincipalConnectionMinutes(ride: Ride | null | undefined, logs: Pa
   return Number.isNaN(date.getTime()) ? null : date.getHours() * 60 + date.getMinutes();
 }
 
-/**
- * The Pilote principal needs to be there early enough to set up before the ride opens to the
- * public, not just by opening time itself - so the real deadline is the scheduled opening minus
- * that ride's setup time (see setup-time.services.ts), not the opening time directly.
- */
 export function isPrincipalLoginLate(ride: Ride | null | undefined, schedules: Schedule[], logs: ParkLog[]): boolean {
   const openingReference = getRideOpeningReferenceMinutes(ride, schedules);
   if (openingReference == null) {

@@ -1,57 +1,23 @@
-<header class="d-flex align-items-center gap-2 bg-light border-bottom px-3 py-2">
-  <img src="logo.png" alt="Nigloland" width="32" height="32" />
-  <span class="fw-bold">IntraNiglo Mobile</span>
-</header>
-
 <main class="page p-3">
   <div class="d-flex flex-wrap gap-2 mb-3">
-    <input
-      type="search"
-      class="form-control"
-      style="max-width: 280px"
-      placeholder="Rechercher une attraction..."
-      [(ngModel)]="search"
-    />
-
+    <input type="search" class="form-control" style="max-width: 280px" placeholder="Rechercher une attraction..."
+      [(ngModel)]="search" />
     <div class="btn-group" role="group" aria-label="Filtre alertes">
-      <input
-        type="radio"
-        class="btn-check"
-        name="alerteFilter"
-        id="alerteFilterOn"
-        autocomplete="off"
-        [checked]="alerteOnly()"
-        (change)="setAlerteFilter(true)"
-      />
+      <input type="radio" class="btn-check" name="alerteFilter" id="alerteFilterOn" autocomplete="off"
+        [checked]="alerteOnly()" (change)="setAlerteFilter(true)" />
       <label class="btn btn-outline-danger" for="alerteFilterOn">Alertes</label>
-
-      <input
-        type="radio"
-        class="btn-check"
-        name="alerteFilter"
-        id="alerteFilterOff"
-        autocomplete="off"
-        [checked]="!alerteOnly()"
-        (change)="setAlerteFilter(false)"
-      />
+      <input type="radio" class="btn-check" name="alerteFilter" id="alerteFilterOff" autocomplete="off"
+        [checked]="!alerteOnly()" (change)="setAlerteFilter(false)" />
       <label class="btn btn-outline-primary" for="alerteFilterOff">Toutes</label>
     </div>
-
     <button type="button" class="btn btn-outline-secondary ms-auto" (click)="refresh()">&#8635; Actualiser</button>
   </div>
-
   @if (loading()) {
-    <p class="text-muted">Chargement des attractions...</p>
+  <p class="text-muted">Chargement des attractions...</p>
   } @else if (error()) {
-    <div class="alert alert-danger">Impossible de charger les attractions depuis l'API.</div>
+  <div class="alert alert-danger">Impossible de charger les attractions depuis l'API.</div>
   } @else {
-    <app-rides-list
-      [items]="items()"
-      [sortKey]="sortKey()"
-      [sortDir]="sortDir()"
-      (sortChange)="toggleSort($event)"
-      (rideSelected)="openRide($event)"
-      (dismissIssue)="dismissAlert($event)"
-    />
+  <app-rides-list [items]="items()" [sortKey]="sortKey()" [sortDir]="sortDir()" (sortChange)="toggleSort($event)"
+    (rideSelected)="openRide($event)" (dismissIssue)="dismissAlert($event)" />
   }
 </main>

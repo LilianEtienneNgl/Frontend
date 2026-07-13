@@ -15,6 +15,10 @@ export class RidesService {
     return this.http.get<Ride>(`/api/rides/${id}`);
   }
 
+  changeWaitingTime(id: number, waitingTime: number): Observable<Ride> {
+    return this.http.patch<Ride>(`/api/rides/${id}`, { waitingTime });
+  }
+
   getAll(): Observable<Ride[]> {
     return this.getRides();
   }

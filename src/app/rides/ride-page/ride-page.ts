@@ -1,5 +1,6 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { RidesService } from '../services/rides.service';
 import { StaffService } from '../../staff/services/staff.service';
 import { LogsService } from '../../core/logs.service';
@@ -51,6 +52,7 @@ export class RidePage implements OnInit {
   private readonly logsService = inject(LogsService);
   private readonly scheduleService = inject(ScheduleService);
   private readonly dismissedAlertsService = inject(DismissedAlertsService);
+  private readonly modalService = inject(NgbModal);
 
   readonly ride = signal<Ride | null>(null);
   readonly staffById = signal<Record<number, Staff>>({});
@@ -361,12 +363,6 @@ export class RidePage implements OnInit {
     return this.resolvePilotName(rawComments) ?? this.supportStaffNameAt(recordedAt) ?? (displayComments || 'Inconnu');
   }
 
-  /**
-   * A support staff connection (comments "NigloLand") isn't one of the 4 numbered pilot slots, so
-   * it never carries an id in userIds - the identity only lives in the ride's live status.staffId
-   * field. That field gets cleared back to -1 once they disconnect, so this only resolves while
-   * they're still connected, but it matches the same data the "Staff:" line already reads.
-   */
   private supportStaffNameAt(recordedAt: string | null): string | null {
     const status = this.ride()?.status;
     if (!status || status.staffId == null || status.staffId <= 0 || !recordedAt) {
@@ -390,5 +386,24 @@ export class RidePage implements OnInit {
       return;
     }
     this.dismissedAlertsService.dismiss(ride.id, issuesSignature(this.currentIssues().map((issue) => issue.message)));
+  }
+
+  openEditWaitingTimeModal(content: TemplateRef<unknown>): void {
+    this.modalService.open(content, { centered: true });
+  }
+
+  saveWaitingTime(modal: NgbModalRef, rawValue: string): void {
+    const ride = this.ride();
+    const waitingTime = Number(rawValue);
+    if (!ride || !Number.isFinite(waitingTime) || waitingTime < 0) {
+      return;
+    }
+
+    this.ridesService.changeWaitingTime(ride.id, waitingTime).subscribe({
+      next: (updatedRide) => {
+        this.ride.set(updatedRide);
+        modal.close();
+      }
+    });
   }
 }
