@@ -106,6 +106,14 @@ export class RidePage implements OnInit {
 
   readonly rideSchedules = computed(() => rideScheduleRanges(this.ride(), this.schedules()));
 
+  readonly currentSchedule = computed<Schedule | null>(() => {
+    const ride = this.ride();
+    if (!ride) {
+      return null;
+    }
+    return this.schedules().find((schedule) => schedule.id === ride.id) ?? null;
+  });
+
   readonly currentIssues = computed(() => rideDefaultIssues(this.ride(), this.schedules(), this.logs()));
 
   readonly defaultAlerts = computed<RideDefaultAlert[]>(() => {
@@ -402,6 +410,27 @@ export class RidePage implements OnInit {
     this.ridesService.changeWaitingTime(ride.id, waitingTime).subscribe({
       next: (updatedRide) => {
         this.ride.set(updatedRide);
+        modal.close();
+      }
+    });
+  }
+
+  openEditHoursModal(content: TemplateRef<unknown>): void {
+    this.modalService.open(content, { centered: true });
+  }
+
+  saveHours(modal: NgbModalRef, openValue: string, closeValue: string): void {
+    const ride = this.ride();
+    if (!ride || !openValue || !closeValue) {
+      return;
+    }
+
+    this.scheduleService.changeHours(ride.id, openValue, closeValue).subscribe({
+      next: (updatedSchedule) => {
+        this.schedules.update((schedules) => [
+          ...schedules.filter((schedule) => schedule.id !== updatedSchedule.id),
+          updatedSchedule
+        ]);
         modal.close();
       }
     });

@@ -10,4 +10,8 @@ export class ScheduleService {
   getAll(): Observable<Schedule[]> {
     return this.http.get<Schedule[]>('/api/hours');
   }
+
+  changeHours(id: number, openTime: string, closeTime: string): Observable<Schedule> {
+    return this.http.patch<Schedule>(`/api/hours/${id}`, { openTime, closeTime });
+  }
 }
